@@ -82,9 +82,42 @@ class Entrega {
     static final char NAND = '.';
 
     static int exercici1(char[] ops, int[] vars) {
-      throw new UnsupportedOperationException("pendent");
+      static int exercici1(char[] ops, int[] vars) {
+            // Convertim les primeres dues variables a booleans
+            boolean var1 = vars[0] == 1;
+            boolean var2 = vars[1] == 1;
+            
+            // Apliquem el primer operador entre var1 i var2
+            var1 = operacions(var1, var2, ops[0]);
+
+            // Iterem per la resta de variables i operadors
+            for (int i = 2; i < vars.length; i++) {
+                var2 = vars[i] == 1;                  // Convertim la nova variable a boolean
+                var1 = operacions(var1, var2, ops[i - 1]);  // Apliquem l'operador corresponent
+            }
+
+            // Retornem el resultat final com a 1 (true) o 0 (false)
+            return var1 ? 1 : 0;
+        }
     }
 
+    static int operacions(int var1, int var2, char ops) {
+      switch (ops) {
+        case 1:
+          return var1 && var2;
+          break;
+        case 2:
+          return var1 || var2;
+          break;
+        case 3:
+          return !var1 || var2;
+          break;
+        case 4:
+          return !(var1 && var2);
+          break;
+      } 
+      
+    }
     /*
      * Aquest mètode té de paràmetre l'univers (representat com un array) i els predicats
      * adients `p` i `q`. Per avaluar aquest predicat, si `x` és un element de l'univers, podeu
