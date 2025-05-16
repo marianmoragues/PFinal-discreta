@@ -1,7 +1,13 @@
+package pfinaldiscreta;
+
 import java.lang.AssertionError;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.BiPredicate;
 import java.util.function.BooleanSupplier;
@@ -154,16 +160,16 @@ class Entrega {
                     break;
                 }
             }
-            
+
             int comptarQ = 0;
             for (int x : universe) {
                 if (q.test(x)) {
                     comptarQ++;
                 }
             }
-            
+
             boolean existeixUnicQ = es1(comptarQ);
-            
+
             return totsCompleixenP == existeixUnicQ;
         }
 
@@ -212,13 +218,43 @@ class Entrega {
      */
     static class Tema2 {
 
+        static int valors[][];
+
         /*
      * Trobau el nombre de particions diferents del conjunt `a`, que podeu suposar que no és buid.
      *
      * Pista: Cercau informació sobre els nombres de Stirling.
          */
         static int exercici1(int[] a) {
-            throw new UnsupportedOperationException("pendent");
+            int n = a.length;
+            valors = new int[n + 1][n + 1];
+
+            // Inicialitzar memòria
+            for (int[] fila : valors) {
+                Arrays.fill(fila, -1);
+            }
+
+            int total = 0;
+            for (int k = 1; k <= n; k++) {
+                total += Math.abs(stirlingPrimera(n, k));
+            }
+
+            return total;
+        }
+
+        static int stirlingPrimera(int n, int k) {
+            if (n == k) {
+                return 1;
+            } else if (k == 0 || k > n) {
+                return 0;
+            } else if (valors[n][k] != -1) {
+                return valors[n][k];
+            }
+
+            // s(n, k) = s(n-1, k-1) + (n-1) * s(n-1, k)
+            int res = stirlingPrimera(n - 1, k - 1) + (n - 1) * stirlingPrimera(n - 1, k);
+            valors[n][k] = res;
+            return res;
         }
 
         /*
@@ -229,7 +265,59 @@ class Entrega {
      * Si no existeix, retornau -1.
          */
         static int exercici2(int[] a, int[][] rel) {
-            throw new UnsupportedOperationException("pendent");
+            int n = a.length;
+
+            Map<Integer, Integer> indexMap = new HashMap<>();
+            for (int i = 0; i < n; i++) {
+                indexMap.put(a[i], i);
+            }
+
+            boolean R[][] = new boolean[n][n];
+
+            for (int[] par : rel) {
+                int x = indexMap.get(par[0]);
+                int y = indexMap.get(par[1]);
+                R[x][y] = true;
+            }
+
+            // Clausura reflexiva
+            for (int i = 0; i < n; i++) {
+                R[i][i] = true;
+            }
+
+            // Clausura transitiva 
+            for (int k = 0; k < n; k++) {
+                for (int i = 0; i < n; i++) {
+                    if (R[i][k]) {
+                        for (int j = 0; j < n; j++) {
+                            if (R[k][j]) {
+                                R[i][j] = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Comprovar antisimetria
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (i != j && R[i][j] && R[j][i]) {
+                        return -1; // No és antisimètrica
+                    }
+                }
+            }
+
+            // Comptar cardinal
+            int count = 0;
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (R[i][j]) {
+                        count++;
+                    }
+                }
+            }
+
+            return count;
         }
 
         /*
@@ -240,7 +328,125 @@ class Entrega {
      * - null en qualsevol altre cas
          */
         static Integer exercici3(int[] a, int[][] rel, int[] x, boolean op) {
-            throw new UnsupportedOperationException("pendent");
+            int n = a.length;
+
+            Map<Integer, Integer> indexMap = new HashMap<>();
+            for (int i = 0; i < n; i++) {
+                indexMap.put(a[i], i);
+            }
+
+            boolean R[][] = new boolean[n][n];
+
+            for (int[] par : rel) {
+                int y = indexMap.get(par[0]);
+                int z = indexMap.get(par[1]);
+                R[y][z] = true;
+            }
+
+            // Clausura reflexiva
+            for (int i = 0; i < n; i++) {
+                R[i][i] = true;
+            }
+
+            // Clausura transitiva 
+            for (int k = 0; k < n; k++) {
+                for (int i = 0; i < n; i++) {
+                    if (R[i][k]) {
+                        for (int j = 0; j < n; j++) {
+                            if (R[k][j]) {
+                                R[i][j] = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Comprovar antisimetria
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (i != j && R[i][j] && R[j][i]) {
+                        return -1; // No és antisimètrica
+                    }
+                }
+            }
+
+            // Índexos dels elements de x
+            int[] xIndices = new int[x.length];
+            for (int i = 0; i < x.length; i++) {
+                xIndices[i] = indexMap.get(x[i]);
+            }
+
+            // Buscar ínfim o suprem
+            Integer candidat = null;
+            int count = 0;
+
+            for (int m = 0; m < n; m++) {
+                boolean valid = true;
+                for (int xi : xIndices) {
+                    if (op) {
+                        // Suprem: m >= xi? (m relacionat amb xi?)
+                        // En l'ordre parcial: sup és mínim element major o igual a tots
+                        if (!R[xi][m]) { // xi <= m ha de ser cert
+                            valid = false;
+                            break;
+                        }
+                    } else {
+                        // Ínfim: m <= xi? (m relacionat amb xi)
+                        // En l'ordre parcial: ínfim és màxim element menor o igual a tots
+                        if (!R[m][xi]) { // m <= xi ha de ser cert
+                            valid = false;
+                            break;
+                        }
+                    }
+                }
+                if (valid) {
+                    // Comprovem que sigui mínim/màxim entre els candidats
+                    boolean millor = true;
+                    for (int mm = 0; mm < n; mm++) {
+                        if (mm == m) {
+                            continue;
+                        }
+                        boolean potSerMillor = true;
+                        for (int xi : xIndices) {
+                            if (op) {
+                                // Suprem: mm també >= x[i]
+                                if (!R[xi][mm]) {
+                                    potSerMillor = false;
+                                }
+                            } else {
+                                // Ínfim: mm també <= x[i]
+                                if (!R[mm][xi]) {
+                                    potSerMillor = false;
+                                }
+                            }
+                        }
+                        if (potSerMillor) {
+                            if (op) {
+                                // Suprem ha de ser mínim, així que si mm < m => mm és millor
+                                if (R[mm][m]) {
+                                    millor = false;
+                                    break;
+                                }
+                            } else {
+                                // Ínfim ha de ser màxim, si mm > m => mm és millor
+                                if (R[m][mm]) {
+                                    millor = false;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (millor) {
+                        candidat = a[m];
+                        count++;
+                    }
+                }
+            }
+
+            if (count == 1) {
+                return candidat;
+            }
+            return null;
         }
 
         /*
@@ -251,7 +457,85 @@ class Entrega {
      *  - Sinó, null.
          */
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
-            throw new UnsupportedOperationException("pendent");
+            int n = a.length;
+            int m = b.length;
+
+            // Map del valor a l'índex dins b (per facilitar)
+            Map<Integer, Integer> bIndex = new HashMap<>();
+            for (int i = 0; i < m; i++) {
+                bIndex.put(b[i], i);
+            }
+
+            // Calcula imatge i comprova injectivitat
+            Map<Integer, Integer> fMap = new HashMap<>(); // val_b -> val_a
+            Set<Integer> image = new HashSet<>();
+            boolean injectiva = true;
+
+            for (int x : a) {
+                int y = f.apply(x);
+                if (!bIndex.containsKey(y)) {
+                    return null; // f(x) no està dins b: invalid
+                }
+                if (image.contains(y)) {
+                    // valor repetit → no injectiva
+                    injectiva = false;
+                } else {
+                    image.add(y);
+                    fMap.put(y, x);
+                }
+            }
+
+            // Comprovar sobrejectivitat: imatge == b?
+            boolean sobrejectiva = image.size() == m;
+
+            // 1. Si f és bijectiva (injectiva + sobrejectiva)
+            if (injectiva && sobrejectiva) {
+                // Retornem la inversa completa: pares (f(x), x)
+                int[][] inversa = new int[m][2];
+                for (int i = 0; i < m; i++) {
+                    int valB = b[i];
+                    int valA = fMap.get(valB);
+                    inversa[i][0] = valB;
+                    inversa[i][1] = valA;
+                }
+                return inversa;
+            }
+
+            // 2. Inversa per l'esquerra: existeix inversa parcial per la imatge
+            if (injectiva) {
+                // Retornem els parells (f(x), x) només per imatge
+                int[][] inversaEsq = new int[image.size()][2];
+                int idx = 0;
+                for (int valB : image) {
+                    inversaEsq[idx][0] = valB;
+                    inversaEsq[idx][1] = fMap.get(valB);
+                    idx++;
+                }
+                return inversaEsq;
+            }
+
+            // 3. Inversa per la dreta: si és sobrejectiva, podem definir g amb algun valor preimatge per cada y
+            if (sobrejectiva) {
+                // Mapejem cada y a un preimatge qualsevol (primer que trobem)
+                Map<Integer, Integer> preimatge = new HashMap<>();
+                for (int x : a) {
+                    int y = f.apply(x);
+                    if (!preimatge.containsKey(y)) {
+                        preimatge.put(y, x);
+                    }
+                }
+                int[][] inversaDreta = new int[m][2];
+                for (int i = 0; i < m; i++) {
+                    int valB = b[i];
+                    int valA = preimatge.get(valB);
+                    inversaDreta[i][0] = valB;
+                    inversaDreta[i][1] = valA;
+                }
+                return inversaDreta;
+            }
+
+            // 4. No existeix cap inversa
+            return null;
         }
 
         /*
