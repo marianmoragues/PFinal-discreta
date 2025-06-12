@@ -130,7 +130,6 @@ class Entrega {
                     throw new IllegalArgumentException("Operador desconegut: " + op);
             }
         }
-        
 
         static boolean es1(int valor) {
             return valor == 1;
@@ -304,49 +303,66 @@ class Entrega {
          */
         static Integer exercici3(int[] a, int[][] rel, int[] x, boolean op) {
             int n = a.length;
-            int[] idx = new int[a[n - 1] + 1];
+            int max = a[n - 1];
+            int[] posicio = new int[max + 1];
+
             for (int i = 0; i < n; i++) {
-                idx[a[i]] = i;
+                posicio[a[i]] = i;
             }
 
-            boolean[][] relacio = new boolean[n][n];
-            for (int[] p : rel) {
-                relacio[idx[p[0]]][idx[p[1]]] = true;
+            // Cream matriu de relació
+            boolean[][] matriu = new boolean[n][n];
+            for (int[] parella : rel) {
+                int i = posicio[parella[0]];
+                int j = posicio[parella[1]];
+                matriu[i][j] = true;
             }
 
+            // Clausura transitiva
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
-                        relacio[i][j] |= relacio[i][k] && relacio[k][j];
+                        if (matriu[i][k] && matriu[k][j]) {
+                            matriu[i][j] = true;
+                        }
                     }
                 }
             }
 
-            Integer candidat = null;
-            for (int v : a) {
-                int i = idx[v];
-                boolean valid = true;
-                for (int u : x) {
-                    int j = idx[u];
-                    if (op && !relacio[j][i]) {
-                        valid = false;
-                    }
-                    if (!op && !relacio[i][j]) {
-                        valid = false;
-                    }
-                    if (!valid) {
-                        break;
+            // Cerquem ínfim o suprem
+            Integer millor = null;
+
+            for (int i = 0; i < n; i++) {
+                int valor = a[i];
+                boolean compleix = true;
+
+                for (int elem : x) {
+                    int j = posicio[elem];
+
+                    if (op) {
+                        // Suprem → ha de ser major o igual que tots els de x
+                        if (!matriu[j][i]) {
+                            compleix = false;
+                            break;
+                        }
+                    } else {
+                        // Ínfim → ha de ser menor o igual que tots els de x
+                        if (!matriu[i][j]) {
+                            compleix = false;
+                            break;
+                        }
                     }
                 }
-                if (valid) {
-                    if (candidat == null || (op && v < candidat) || (!op && v > candidat)) {
-                        candidat = v;
+
+                if (compleix) {
+                    if (millor == null || (op && valor < millor) || (!op && valor > millor)) {
+                        millor = valor;
                     }
                 }
             }
-            return candidat;
+
+            return millor;
         }
-
 
         /*
      * Donada una funció `f` de `a` a `b`, retornau:
@@ -357,54 +373,84 @@ class Entrega {
          */
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
             int n = a.length;
-            int[][] parelles = new int[n][2];
-            Set<Integer> imatge = new HashSet<>();
-            Set<Integer> codomini = new HashSet<>();
+            int[][] graf = new int[n][2];
+            boolean[] utilitzat = new boolean[b.length];
 
+            // Generam les parelles f(x) = y
             for (int i = 0; i < n; i++) {
-                int y = f.apply(a[i]);
-                parelles[i][0] = a[i];
-                parelles[i][1] = y;
-                imatge.add(y);
+                graf[i][0] = a[i];
+                graf[i][1] = f.apply(a[i]);
             }
 
-            for (int val : b) {
-                codomini.add(val);
+            // Comprovam si és injectiva
+            boolean injectiva = true;
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    if (graf[i][1] == graf[j][1]) {
+                        injectiva = false;
+                        break;
+                    }
+                }
+                if (!injectiva) {
+                    break;
+                }
             }
 
-            boolean injectiva = imatge.size() == n;
-            boolean sobrejectiva = imatge.containsAll(codomini);
+            // Comprovam si és exhaustiva
+            boolean exhaustiva = true;
+            for (int i = 0; i < b.length; i++) {
+                boolean trobat = false;
+                for (int j = 0; j < n; j++) {
+                    if (graf[j][1] == b[i]) {
+                        trobat = true;
+                        break;
+                    }
+                }
+                if (!trobat) {
+                    exhaustiva = false;
+                    break;
+                }
+            }
 
-            if (injectiva && sobrejectiva) {
-                int[][] inv = new int[n][2];
+            if (injectiva && exhaustiva) {
+                // Inversa total
+                int[][] inversa = new int[n][2];
                 for (int i = 0; i < n; i++) {
-                    inv[i][0] = parelles[i][1];
-                    inv[i][1] = parelles[i][0];
+                    inversa[i][0] = graf[i][1];
+                    inversa[i][1] = graf[i][0];
                 }
-                return inv;
-            } else if (injectiva) {
-                int[][] esquerra = new int[n][2];
+                return inversa;
+            }
+
+            if (injectiva) {
+                // Inversa per l’esquerra
+                int[][] invE = new int[n][2];
                 for (int i = 0; i < n; i++) {
-                    esquerra[i][0] = parelles[i][1];
-                    esquerra[i][1] = parelles[i][0];
+                    invE[i][0] = graf[i][1];
+                    invE[i][1] = graf[i][0];
                 }
-                return esquerra;
-            } else if (sobrejectiva) {
-                int[][] dreta = new int[b.length][2];
+                return invE;
+            }
+
+            if (exhaustiva) {
+                // Inversa per la dreta
+                int[][] invD = new int[b.length][2];
                 for (int i = 0; i < b.length; i++) {
+                    int val = b[i];
                     for (int j = 0; j < n; j++) {
-                        if (parelles[j][1] == b[i]) {
-                            dreta[i][0] = b[i];
-                            dreta[i][1] = parelles[j][0];
+                        if (graf[j][1] == val) {
+                            invD[i][0] = val;
+                            invD[i][1] = graf[j][0];
                             break;
                         }
                     }
                 }
-                return dreta;
+                return invD;
             }
 
             return null;
         }
+
 
         /*
      * Aquí teniu alguns exemples i proves relacionades amb aquests exercicis (vegeu `main`)
