@@ -257,64 +257,47 @@ class Entrega {
      * Si no existeix, retornau -1.
          */
         static int exercici2(int[] a, int[][] rel) {
-            int n = a.length; // Nombre d'elements del conjunt
-
-            int max = a[n - 1]; // com que l'array a està ordenat, podem crear un array
-            // per mapar cada valor del conjunt al seu índex
-            int[] indexos = new int[max + 1]; // ens asseguram que la mida sigui suficient
-
-            // omplim l'array indexos
+            int n = a.length;
+            int[] pos = new int[a[n - 1] + 1];
             for (int i = 0; i < n; i++) {
-                indexos[a[i]] = i;
+                pos[a[i]] = i;
             }
 
-            // per representar la relació entre elements del conjunt
-            boolean[][] matriu = new boolean[n][n];
-
-            // afegim a la matriu les parelles que ja formen part de rel
-            for (int[] parella : rel) {
-                int i = indexos[parella[0]]; // index del primer element
-                int j = indexos[parella[1]]; // index del segon element
-                matriu[i][j] = true;         // hi ha relació i -> j
+            boolean[][] relacio = new boolean[n][n];
+            for (int[] par : rel) {
+                relacio[pos[par[0]]][pos[par[1]]] = true;
             }
 
-            // Condició reflexiva: ∀a : a R a
             for (int i = 0; i < n; i++) {
-                matriu[i][i] = true;
+                relacio[i][i] = true;
             }
 
-            // Condició transitiva: ∀a, b, c : a R b ∧ b R c → a R c
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
-                        if (matriu[i][k] && matriu[k][j]) {
-                            matriu[i][j] = true;
-                        }
+                        relacio[i][j] |= (relacio[i][k] && relacio[k][j]);
                     }
                 }
             }
 
-            // Comprovació antisimetria: ∀a, b : a R b ∧ b R a → a = b
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
-                    if (i != j && matriu[i][j] && matriu[j][i]) {
-                        return -1; // relació no és antisimètrica, no pot ser d'ordre parcial
+                    if (i != j && relacio[i][j] && relacio[j][i]) {
+                        return -1;
                     }
                 }
             }
 
-            // comptam quantes relacions conté la matriu finalment
-            int total = 0;
-            for (boolean[] fila : matriu) {
-                for (boolean valor : fila) {
-                    if (valor) {
-                        total++;
+            int count = 0;
+            for (int i = 0; i < n; i++) {
+                for (int j = 0; j < n; j++) {
+                    if (relacio[i][j]) {
+                        count++;
                     }
                 }
             }
 
-            // retornam el cardinal de la relació
-            return total;
+            return count;
         }
 
 
@@ -327,78 +310,47 @@ class Entrega {
          */
         static Integer exercici3(int[] a, int[][] rel, int[] x, boolean op) {
             int n = a.length;
-
-            // Mapam cada element del conjunt a un índex
-            int max = a[n - 1];
-            int[] indexos = new int[max + 1];
+            int[] idx = new int[a[n - 1] + 1];
             for (int i = 0; i < n; i++) {
-                indexos[a[i]] = i;
+                idx[a[i]] = i;
             }
 
-            // Cream la matriu de relació
-            boolean[][] matriu = new boolean[n][n];
-            for (int[] parella : rel) {
-                int i = indexos[parella[0]];
-                int j = indexos[parella[1]];
-                matriu[i][j] = true;
+            boolean[][] relacio = new boolean[n][n];
+            for (int[] p : rel) {
+                relacio[idx[p[0]]][idx[p[1]]] = true;
             }
 
-            // Clausura transitiva
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
-                        if (matriu[i][k] && matriu[k][j]) {
-                            matriu[i][j] = true;
-                        }
+                        relacio[i][j] |= relacio[i][k] && relacio[k][j];
                     }
                 }
             }
 
-            // Suprem: mínim dels majos comuns
-            // Ínfim: màxim dels menors comuns
-            Integer resultat = null;
-
-            for (int candidat : a) {
-                int i = indexos[candidat];
-                boolean vàlid = true;
-
-                for (int elem : x) {
-                    int j = indexos[elem];
-                    if (op) {
-                        // Suprem → ha de ser major o igual que tots els de x
-                        if (!matriu[j][i]) {
-                            vàlid = false;
-                            break;
-                        }
-                    } else {
-                        // Ínfim → ha de ser menor o igual que tots els de x
-                        if (!matriu[i][j]) {
-                            vàlid = false;
-                            break;
-                        }
+            Integer candidat = null;
+            for (int v : a) {
+                int i = idx[v];
+                boolean valid = true;
+                for (int u : x) {
+                    int j = idx[u];
+                    if (op && !relacio[j][i]) {
+                        valid = false;
+                    }
+                    if (!op && !relacio[i][j]) {
+                        valid = false;
+                    }
+                    if (!valid) {
+                        break;
                     }
                 }
-
-                if (vàlid) {
-                    if (resultat == null) {
-                        resultat = candidat;
-                    } else {
-                        if (op) {
-                            // Suprem → cercam el menor
-                            if (candidat < resultat) {
-                                resultat = candidat;
-                            }
-                        } else {
-                            // Ínfim → cercam el major
-                            if (candidat > resultat) {
-                                resultat = candidat;
-                            }
-                        }
+                if (valid) {
+                    if (candidat == null || (op && v < candidat) || (!op && v > candidat)) {
+                        candidat = v;
                     }
                 }
             }
-
-            return resultat;
+            return candidat;
         }
 
 
@@ -411,74 +363,45 @@ class Entrega {
          */
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
             int n = a.length;
-            int[][] graf = new int[n][2];
+            int[][] parelles = new int[n][2];
+            Set<Integer> imatge = new HashSet<>();
+            Set<Integer> codomini = new HashSet<>();
 
-            // Construïm el graf de la funció f
             for (int i = 0; i < n; i++) {
-                graf[i][0] = a[i];
-                graf[i][1] = f.apply(a[i]);
+                int y = f.apply(a[i]);
+                parelles[i][0] = a[i];
+                parelles[i][1] = y;
+                imatge.add(y);
             }
 
-            // Comprovam si és injectiva (no es repeteixen imatges)
-            boolean injectiva = true;
-            for (int i = 0; i < n; i++) {
-                for (int j = i + 1; j < n; j++) {
-                    if (graf[i][1] == graf[j][1]) {
-                        injectiva = false;
-                        break;
-                    }
-                }
-                if (!injectiva) {
-                    break;
-                }
+            for (int val : b) {
+                codomini.add(val);
             }
 
-            // Comprovam si és exhaustiva (tots els de b apareixen com a imatge)
-            boolean exhaustiva = true;
-            for (int i = 0; i < b.length; i++) {
-                boolean trobat = false;
-                for (int j = 0; j < n; j++) {
-                    if (graf[j][1] == b[i]) {
-                        trobat = true;
-                        break;
-                    }
-                }
-                if (!trobat) {
-                    exhaustiva = false;
-                    break;
-                }
-            }
+            boolean injectiva = imatge.size() == n;
+            boolean sobrejectiva = imatge.containsAll(codomini);
 
-            // Si és bijectiva (injectiva i exhaustiva), retornam la inversa completa
-            if (injectiva && exhaustiva) {
-                int[][] inversa = new int[n][2];
+            if (injectiva && sobrejectiva) {
+                int[][] inv = new int[n][2];
                 for (int i = 0; i < n; i++) {
-                    inversa[i][0] = graf[i][1];
-                    inversa[i][1] = graf[i][0];
+                    inv[i][0] = parelles[i][1];
+                    inv[i][1] = parelles[i][0];
                 }
-                return inversa;
-            }
-
-            // Si només és injectiva → inversa per l'esquerra
-            if (injectiva) {
+                return inv;
+            } else if (injectiva) {
                 int[][] esquerra = new int[n][2];
                 for (int i = 0; i < n; i++) {
-                    esquerra[i][0] = graf[i][1];
-                    esquerra[i][1] = graf[i][0];
+                    esquerra[i][0] = parelles[i][1];
+                    esquerra[i][1] = parelles[i][0];
                 }
                 return esquerra;
-            }
-
-            // Si només és exhaustiva → inversa per la dreta
-            if (exhaustiva) {
-                int m = b.length;
-                int[][] dreta = new int[m][2];
-                for (int i = 0; i < m; i++) {
-                    int y = b[i];
+            } else if (sobrejectiva) {
+                int[][] dreta = new int[b.length][2];
+                for (int i = 0; i < b.length; i++) {
                     for (int j = 0; j < n; j++) {
-                        if (graf[j][1] == y) {
-                            dreta[i][0] = y;
-                            dreta[i][1] = graf[j][0];
+                        if (parelles[j][1] == b[i]) {
+                            dreta[i][0] = b[i];
+                            dreta[i][1] = parelles[j][0];
                             break;
                         }
                     }
@@ -486,7 +409,6 @@ class Entrega {
                 return dreta;
             }
 
-            // Si no compleix cap condició
             return null;
         }
 
@@ -627,36 +549,32 @@ class Entrega {
         /*
      * Determinau si el graf `g` (no dirigit) té cicles.
          */
-        static boolean exercici1(int[][] g) {
-            int n = g.length;
-            boolean[] visitat = new boolean[n];
+        static boolean exercici1(int[][] graf) {
+            int n = graf.length;
+            boolean[] marcat = new boolean[n];
 
             for (int i = 0; i < n; i++) {
-                if (!visitat[i]) {
-                    if (esCicle(g, visitat, i, -1)) {
+                if (!marcat[i]) {
+                    if (hiHaCicle(graf, marcat, i, -1)) {
                         return true;
                     }
                 }
             }
-
             return false;
         }
 
-        // retorna true si troba un cicle
-        static boolean esCicle(int[][] g, boolean[] visitat, int actual, int pare) {
-            visitat[actual] = true;
-
-            for (int veinat : g[actual]) {
-                if (!visitat[veinat]) {
-                    if (esCicle(g, visitat, veinat, actual)) {
+        // funció auxiliar per detectar cicles
+        static boolean hiHaCicle(int[][] graf, boolean[] marcat, int actual, int anterior) {
+            marcat[actual] = true;
+            for (int veinat : graf[actual]) {
+                if (!marcat[veinat]) {
+                    if (hiHaCicle(graf, marcat, veinat, actual)) {
                         return true;
                     }
-                } else if (veinat != pare) {
-                    // Si el veïnat ja ha estat visitat i no és el pare → cicle
+                } else if (veinat != anterior) {
                     return true;
                 }
             }
-
             return false;
         }
 
@@ -677,54 +595,39 @@ class Entrega {
             }
 
             do {
-                if (comprovaIsomorfisme(g1, g2, perm)) {
+                if (mateixGraf(g1, g2, perm)) {
                     return true;
                 }
-            } while (segPermutacio(perm));
+            } while (properaPermutacio(perm));
 
             return false;
         }
 
-        // Comprova si aplicar la permutació fa que g1 sigui igual a g2
-        static boolean comprovaIsomorfisme(int[][] g1, int[][] g2, int[] perm) {
+        static boolean mateixGraf(int[][] g1, int[][] g2, int[] perm) {
             int n = g1.length;
-
             for (int i = 0; i < n; i++) {
                 boolean[] connexions = new boolean[n];
                 for (int veinat : g1[i]) {
                     connexions[perm[veinat]] = true;
                 }
 
-                for (int j = 0; j < n; j++) {
-                    if (g2[perm[i]].length != g1[i].length) {
+                if (g2[perm[i]].length != g1[i].length) {
+                    return false;
+                }
+                for (int v : g2[perm[i]]) {
+                    if (!connexions[v]) {
                         return false;
                     }
-                    boolean trobat = false;
-                    for (int x : g2[perm[i]]) {
-                        if (connexions[x]) {
-                            trobat = true;
-                        } else {
-                            trobat = false;
-                            break;
-                        }
-                    }
-                    if (!trobat) {
-                        return false;
-                    }
-                    break; // ja hem comprovat aquest vèrtex
                 }
             }
-
             return true;
         }
 
-        // Genera la següent permutació lexicogràfica 
-        static boolean segPermutacio(int[] perm) {
+        static boolean properaPermutacio(int[] perm) {
             int i = perm.length - 2;
             while (i >= 0 && perm[i] > perm[i + 1]) {
                 i--;
             }
-
             if (i < 0) {
                 return false;
             }
@@ -743,7 +646,6 @@ class Entrega {
                 perm[a] = perm[b];
                 perm[b] = aux;
             }
-
             return true;
         }
 
@@ -755,44 +657,38 @@ class Entrega {
      * En cas de ser un arbre, assumiu que l'ordre dels fills vé donat per l'array de veïns de cada
      * vèrtex.
          */
-        static int[] exercici3(int[][] g, int r) {
-            int n = g.length;
-            boolean[] visitat = new boolean[n];
+        static int[] exercici3(int[][] graf, int arrel) {
+            int n = graf.length;
+            boolean[] marcat = new boolean[n];
 
-            // Comprovam si hi ha algun cicle
-            if (esCicle(g, visitat, r, -1)) {
+            if (hiHaCicle(graf, marcat, arrel, -1)) {
                 return null;
             }
-
-            // Comprovam si és connex
-            for (boolean v : visitat) {
+            for (boolean v : marcat) {
                 if (!v) {
                     return null;
                 }
             }
 
-            // Si és un arbre, feim el postordre
-            int[] resultat = new int[n];
-            int[] pos = new int[1]; // ús d'array per passar enter per referència
-            Arrays.fill(visitat, false);
-            postordre(g, r, visitat, resultat, pos);
-
-            return resultat;
-        }
-
-        static void postordre(int[][] g, int u, boolean[] visitat, int[] resultat, int[] pos) {
-            visitat[u] = true;
-
-            for (int v : g[u]) {
-                if (!visitat[v]) {
-                    postordre(g, v, visitat, resultat, pos);
-                }
+            int[] recorregut = new int[n];
+            int[] posicio = new int[1];
+            for (int i = 0; i < n; i++) {
+                marcat[i] = false;
             }
 
-            resultat[pos[0]] = u;
-            pos[0]++;
+            postordre(graf, arrel, marcat, recorregut, posicio);
+            return recorregut;
         }
 
+        static void postordre(int[][] graf, int actual, boolean[] marcat, int[] recorregut, int[] pos) {
+            marcat[actual] = true;
+            for (int v : graf[actual]) {
+                if (!marcat[v]) {
+                    postordre(graf, v, marcat, recorregut, pos);
+                }
+            }
+            recorregut[pos[0]++] = actual;
+        }
 
         /*
      * Suposau que l'entrada és un mapa com el següent, donat com String per files (vegeu els tests)
@@ -819,12 +715,10 @@ class Entrega {
      * Si és impossible, retornau -1.
          */
         static int exercici4(char[][] mapa) {
-            int files = mapa.length;
-            int columnes = mapa[0].length;
-
-            // Cercam l'origen
+            int files = mapa.length, columnes = mapa[0].length;
             int origenX = -1, origenY = -1;
-            for (int i = 0; i < files; i++) {
+
+            for (int i = 0; i < files && origenX == -1; i++) {
                 for (int j = 0; j < columnes; j++) {
                     if (mapa[i][j] == 'O') {
                         origenX = i;
@@ -832,64 +726,41 @@ class Entrega {
                         break;
                     }
                 }
-                if (origenX != -1) {
-                    break;
-                }
             }
-
-            // Si no s'ha trobat l'origen
             if (origenX == -1) {
                 return -1;
             }
 
-            // Cua bàsica amb arrays
-            int max = files * columnes;
-            int[][] cua = new int[max][2];
-            int inici = 0;
-            int fi = 0;
-
-            // Arrays auxiliars
+            int[][] cua = new int[files * columnes][2];
             boolean[][] visitat = new boolean[files][columnes];
             int[][] dist = new int[files][columnes];
+            int ini = 0, fi = 0;
 
-            // Direccions (amunt, avall, esquerra, dreta)
-            int[] dx = {-1, 1, 0, 0};
-            int[] dy = {0, 0, -1, 1};
-
-            // Afegim l'origen a la cua
+            int[] dx = {-1, 1, 0, 0}, dy = {0, 0, -1, 1};
             cua[fi][0] = origenX;
             cua[fi][1] = origenY;
             fi++;
             visitat[origenX][origenY] = true;
-            dist[origenX][origenY] = 0;
 
-            while (inici < fi) {
-                int x = cua[inici][0];
-                int y = cua[inici][1];
-                inici++;
-
+            while (ini < fi) {
+                int x = cua[ini][0], y = cua[ini][1];
+                ini++;
                 if (mapa[x][y] == 'D') {
                     return dist[x][y];
                 }
 
-                // Exploram veïnats
                 for (int d = 0; d < 4; d++) {
-                    int nx = x + dx[d];
-                    int ny = y + dy[d];
-
-                    if (nx >= 0 && nx < files && ny >= 0 && ny < columnes) {
-                        if (!visitat[nx][ny] && mapa[nx][ny] != '#') {
-                            visitat[nx][ny] = true;
-                            dist[nx][ny] = dist[x][y] + 1;
-                            cua[fi][0] = nx;
-                            cua[fi][1] = ny;
-                            fi++;
-                        }
+                    int nx = x + dx[d], ny = y + dy[d];
+                    if (nx >= 0 && nx < files && ny >= 0 && ny < columnes && !visitat[nx][ny] && mapa[nx][ny] != '#') {
+                        visitat[nx][ny] = true;
+                        dist[nx][ny] = dist[x][y] + 1;
+                        cua[fi][0] = nx;
+                        cua[fi][1] = ny;
+                        fi++;
                     }
                 }
             }
-
-            return -1; // No s'ha trobat camí
+            return -1;
         }
 
 
