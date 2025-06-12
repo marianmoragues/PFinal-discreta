@@ -835,8 +835,36 @@ class Entrega {
      *
      * Pista: https://en.wikipedia.org/wiki/Exponentiation_by_squaring
          */
-        static int[] exercici1(String msg, int n, int e) {
-            throw new UnsupportedOperationException("pendent");
+        static int[] exercici1(String missatge, int n, int e) {
+            byte[] lletres = missatge.getBytes();
+            int[] blocs = new int[lletres.length / 2];
+
+            // Convertim els caràcters a blocs de 2 caràcters (codificació ASCII)
+            for (int i = 0; i < lletres.length; i += 2) {
+                blocs[i / 2] = (lletres[i] << 8) + lletres[i + 1];
+            }
+
+            // Xifrat RSA: c = m^e mod n
+            for (int i = 0; i < blocs.length; i++) {
+                blocs[i] = potenciaMod(blocs[i], e, n);
+            }
+
+            return blocs;
+        }
+
+        // Càlcul eficient de (base^exp) mod modul utilitzant quadrats
+        static int potenciaMod(int base, int exp, int modul) {
+            int resultat = 1;
+            base = base % modul;
+
+            while (exp > 0) {
+                if ((exp & 1) == 1) {
+                    resultat = (int) (((long) resultat * base) % modul);
+                }
+                base = (int) (((long) base * base) % modul);
+                exp >>= 1;
+            }
+            return resultat;
         }
 
         /*
@@ -854,7 +882,41 @@ class Entrega {
      * - n és major que 2¹⁴, i n² és menor que Integer.MAX_VALUE
          */
         static String exercici2(int[] m, int n, int e) {
-            throw new UnsupportedOperationException("pendent");
+            // 1. Factoritzam n per trobar p i q
+            int p = -1, q = -1;
+            for (int i = 2; i < n; i++) {
+                if (n % i == 0) {
+                    p = i;
+                    q = n / i;
+                    break;
+                }
+            }
+
+            int phi = (p - 1) * (q - 1);
+
+            // 2. Trobar l'invers multiplicatiu de e mòdul phi
+            int d = -1;
+            for (int i = 1; i < phi; i++) {
+                if ((e * i) % phi == 1) {
+                    d = i;
+                    break;
+                }
+            }
+
+            // 3. Desencriptar cada bloc
+            int[] blocs = new int[m.length];
+            for (int i = 0; i < m.length; i++) {
+                blocs[i] = potenciaMod(m[i], d, n);
+            }
+
+            // 4. Separar cada bloc en dos bytes i reconstruir el missatge
+            byte[] lletres = new byte[m.length * 2];
+            for (int i = 0; i < blocs.length; i++) {
+                lletres[2 * i] = (byte) (blocs[i] >> 8);        // part alta
+                lletres[2 * i + 1] = (byte) (blocs[i] & 0xFF);  // part baixa
+            }
+
+            return new String(lletres);
         }
 
         static void tests() {
