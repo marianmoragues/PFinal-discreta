@@ -116,27 +116,21 @@ class Entrega {
             }
         }
 
-        static boolean operacions(boolean var1, boolean var2, char ops) {
-            boolean operacio;
-
-            switch (ops) {
-                case 1:
-                    operacio = var1 && var2;
-                    break;
-                case 2:
-                    operacio = var1 || var2;
-                    break;
-                case 3:
-                    operacio = !var1 || var2;
-                    break;
-                case 4:
-                    operacio = !(var1 && var2);
-                    break;
+        static boolean operacions(boolean a, boolean b, char op) {
+            switch (op) {
+                case CONJ:
+                    return a && b;
+                case DISJ:
+                    return a || b;
+                case IMPL:
+                    return !a || b;
+                case NAND:
+                    return !(a && b);
                 default:
-                    throw new AssertionError();
+                    throw new IllegalArgumentException("Operador desconegut: " + op);
             }
-            return operacio;
         }
+        
 
         static boolean es1(int valor) {
             return valor == 1;
