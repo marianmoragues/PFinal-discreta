@@ -374,7 +374,6 @@ class Entrega {
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
             int n = a.length;
             int[][] graf = new int[n][2];
-            boolean[] utilitzat = new boolean[b.length];
 
             // Generam les parelles f(x) = y
             for (int i = 0; i < n; i++) {
@@ -879,12 +878,14 @@ class Entrega {
             byte[] lletres = missatge.getBytes();
             int[] blocs = new int[lletres.length / 2];
 
-            // Convertim els caràcters a blocs de 2 caràcters (codificació ASCII)
+            // Agrupam cada dos caràcters en un sol enter (bloc)
             for (int i = 0; i < lletres.length; i += 2) {
-                blocs[i / 2] = (lletres[i] << 8) + lletres[i + 1];
+                int primer = lletres[i];       // primer caràcter
+                int segon = lletres[i + 1];    // segon caràcter
+                blocs[i / 2] = primer * 256 + segon;
             }
 
-            // Xifrat RSA: c = m^e mod n
+            // Xifram cada bloc amb RSA: c = m^e mod n
             for (int i = 0; i < blocs.length; i++) {
                 blocs[i] = potenciaMod(blocs[i], e, n);
             }
@@ -892,20 +893,18 @@ class Entrega {
             return blocs;
         }
 
-        // Càlcul eficient de (base^exp) mod modul utilitzant quadrats
+        // Mètode per calcular (base^exp) % modul
         static int potenciaMod(int base, int exp, int modul) {
-            int resultat = 1;
-            base = base % modul;
+            long resultat = 1;
+            long b = base;
 
-            while (exp > 0) {
-                if ((exp & 1) == 1) {
-                    resultat = (int) (((long) resultat * base) % modul);
-                }
-                base = (int) (((long) base * base) % modul);
-                exp >>= 1;
+            for (int i = 0; i < exp; i++) {
+                resultat = (resultat * b) % modul;
             }
-            return resultat;
+
+            return (int) resultat;
         }
+
 
         /*
      * Primer, desencriptau el missatge utilitzant xifrat RSA amb la clau pública donada. Després
@@ -934,7 +933,7 @@ class Entrega {
 
             int phi = (p - 1) * (q - 1);
 
-            // 2. Trobar l'invers multiplicatiu de e mòdul phi
+            // 2. Trobar d tal que (e * d) % phi == 1
             int d = -1;
             for (int i = 1; i < phi; i++) {
                 if ((e * i) % phi == 1) {
@@ -943,17 +942,20 @@ class Entrega {
                 }
             }
 
-            // 3. Desencriptar cada bloc
+            // 3. Desxifram cada bloc m[i]^d mod n
             int[] blocs = new int[m.length];
             for (int i = 0; i < m.length; i++) {
                 blocs[i] = potenciaMod(m[i], d, n);
             }
 
-            // 4. Separar cada bloc en dos bytes i reconstruir el missatge
+            // 4. Separar cada bloc en dos caràcters
             byte[] lletres = new byte[m.length * 2];
             for (int i = 0; i < blocs.length; i++) {
-                lletres[2 * i] = (byte) (blocs[i] >> 8);        // part alta
-                lletres[2 * i + 1] = (byte) (blocs[i] & 0xFF);  // part baixa
+                int bloc = blocs[i];
+                int primer = bloc / 256;
+                int segon = bloc % 256;
+                lletres[2 * i] = (byte) primer;
+                lletres[2 * i + 1] = (byte) segon;
             }
 
             return new String(lletres);
