@@ -154,21 +154,19 @@ class Entrega {
          */
         static boolean exercici2(int[] universe, Predicate<Integer> p, Predicate<Integer> q) {
             boolean totsCompleixenP = true;
+            int comptadorQ = 0;
+
             for (int x : universe) {
                 if (!p.test(x)) {
                     totsCompleixenP = false;
-                    break;
                 }
-            }
-
-            int comptarQ = 0;
-            for (int x : universe) {
                 if (q.test(x)) {
-                    comptarQ++;
+                    comptadorQ++;
                 }
             }
 
-            boolean existeixUnicQ = es1(comptarQ);
+            // (∀x : P(x)) <-> (∃!x : Q(x)) s'ha de complir exactament una vegada
+            boolean existeixUnicQ = comptadorQ == 1;
 
             return totsCompleixenP == existeixUnicQ;
         }
@@ -227,34 +225,28 @@ class Entrega {
          */
         static int exercici1(int[] a) {
             int n = a.length;
-            valors = new int[n + 1][n + 1];
 
-            // Inicialitzar memòria
-            for (int[] fila : valors) {
-                Arrays.fill(fila, -1);
+            // Matriu per als nombres de Stirling de segon tipus
+            int[][] S = new int[n + 1][n + 1];
+
+            // Cas base: només hi ha una manera de dividir un conjunt buit en 0 subconjunts
+            S[0][0] = 1;
+
+            // Omplim la taula segons la relació de recurrència:
+            // S(n, k) = k * S(n-1, k) + S(n-1, k-1)
+            for (int i = 1; i <= n; i++) {
+                for (int j = 1; j <= i; j++) {
+                    S[i][j] = j * S[i - 1][j] + S[i - 1][j - 1];
+                }
             }
 
-            int total = 0;
+            // El nombre de particions del conjunt és la suma dels nombres de Stirling de segon tipus per a k = 1 fins n
+            int totalParticions = 0;
             for (int k = 1; k <= n; k++) {
-                total += Math.abs(stirlingPrimera(n, k));
+                totalParticions += S[n][k];
             }
 
-            return total;
-        }
-
-        static int stirlingPrimera(int n, int k) {
-            if (n == k) {
-                return 1;
-            } else if (k == 0 || k > n) {
-                return 0;
-            } else if (valors[n][k] != -1) {
-                return valors[n][k];
-            }
-
-            // s(n, k) = s(n-1, k-1) + (n-1) * s(n-1, k)
-            int res = stirlingPrimera(n - 1, k - 1) + (n - 1) * stirlingPrimera(n - 1, k);
-            valors[n][k] = res;
-            return res;
+            return totalParticions;
         }
 
         /*
@@ -265,60 +257,66 @@ class Entrega {
      * Si no existeix, retornau -1.
          */
         static int exercici2(int[] a, int[][] rel) {
-            int n = a.length;
+            int n = a.length; // Nombre d'elements del conjunt
 
-            Map<Integer, Integer> indexMap = new HashMap<>();
+            int max = a[n - 1]; // com que l'array a està ordenat, podem crear un array
+            // per mapar cada valor del conjunt al seu índex
+            int[] indexos = new int[max + 1]; // ens asseguram que la mida sigui suficient
+
+            // omplim l'array indexos
             for (int i = 0; i < n; i++) {
-                indexMap.put(a[i], i);
+                indexos[a[i]] = i;
             }
 
-            boolean R[][] = new boolean[n][n];
+            // per representar la relació entre elements del conjunt
+            boolean[][] matriu = new boolean[n][n];
 
-            for (int[] par : rel) {
-                int x = indexMap.get(par[0]);
-                int y = indexMap.get(par[1]);
-                R[x][y] = true;
+            // afegim a la matriu les parelles que ja formen part de rel
+            for (int[] parella : rel) {
+                int i = indexos[parella[0]]; // index del primer element
+                int j = indexos[parella[1]]; // index del segon element
+                matriu[i][j] = true;         // hi ha relació i -> j
             }
 
-            // Clausura reflexiva
+            // Condició reflexiva: ∀a : a R a
             for (int i = 0; i < n; i++) {
-                R[i][i] = true;
+                matriu[i][i] = true;
             }
 
-            // Clausura transitiva 
+            // Condició transitiva: ∀a, b, c : a R b ∧ b R c → a R c
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
-                    if (R[i][k]) {
-                        for (int j = 0; j < n; j++) {
-                            if (R[k][j]) {
-                                R[i][j] = true;
-                            }
+                    for (int j = 0; j < n; j++) {
+                        if (matriu[i][k] && matriu[k][j]) {
+                            matriu[i][j] = true;
                         }
                     }
                 }
             }
 
-            // Comprovar antisimetria
+            // Comprovació antisimetria: ∀a, b : a R b ∧ b R a → a = b
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
-                    if (i != j && R[i][j] && R[j][i]) {
-                        return -1; // No és antisimètrica
+                    if (i != j && matriu[i][j] && matriu[j][i]) {
+                        return -1; // relació no és antisimètrica, no pot ser d'ordre parcial
                     }
                 }
             }
 
-            // Comptar cardinal
-            int count = 0;
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    if (R[i][j]) {
-                        count++;
+            // comptam quantes relacions conté la matriu finalment
+            int total = 0;
+            for (boolean[] fila : matriu) {
+                for (boolean valor : fila) {
+                    if (valor) {
+                        total++;
                     }
                 }
             }
 
-            return count;
+            // retornam el cardinal de la relació
+            return total;
         }
+
 
         /*
      * Donada una relació d'ordre parcial `rel` definida sobre `a` i un subconjunt `x` de `a`,
@@ -330,124 +328,79 @@ class Entrega {
         static Integer exercici3(int[] a, int[][] rel, int[] x, boolean op) {
             int n = a.length;
 
-            Map<Integer, Integer> indexMap = new HashMap<>();
+            // Mapam cada element del conjunt a un índex
+            int max = a[n - 1];
+            int[] indexos = new int[max + 1];
             for (int i = 0; i < n; i++) {
-                indexMap.put(a[i], i);
+                indexos[a[i]] = i;
             }
 
-            boolean R[][] = new boolean[n][n];
-
-            for (int[] par : rel) {
-                int y = indexMap.get(par[0]);
-                int z = indexMap.get(par[1]);
-                R[y][z] = true;
+            // Cream la matriu de relació
+            boolean[][] matriu = new boolean[n][n];
+            for (int[] parella : rel) {
+                int i = indexos[parella[0]];
+                int j = indexos[parella[1]];
+                matriu[i][j] = true;
             }
 
-            // Clausura reflexiva
-            for (int i = 0; i < n; i++) {
-                R[i][i] = true;
-            }
-
-            // Clausura transitiva 
+            // Clausura transitiva
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
-                    if (R[i][k]) {
-                        for (int j = 0; j < n; j++) {
-                            if (R[k][j]) {
-                                R[i][j] = true;
-                            }
+                    for (int j = 0; j < n; j++) {
+                        if (matriu[i][k] && matriu[k][j]) {
+                            matriu[i][j] = true;
                         }
                     }
                 }
             }
 
-            // Comprovar antisimetria
-            for (int i = 0; i < n; i++) {
-                for (int j = 0; j < n; j++) {
-                    if (i != j && R[i][j] && R[j][i]) {
-                        return -1; // No és antisimètrica
-                    }
-                }
-            }
+            // Suprem: mínim dels majos comuns
+            // Ínfim: màxim dels menors comuns
+            Integer resultat = null;
 
-            // Índexos dels elements de x
-            int[] xIndices = new int[x.length];
-            for (int i = 0; i < x.length; i++) {
-                xIndices[i] = indexMap.get(x[i]);
-            }
+            for (int candidat : a) {
+                int i = indexos[candidat];
+                boolean vàlid = true;
 
-            // Buscar ínfim o suprem
-            Integer candidat = null;
-            int count = 0;
-
-            for (int m = 0; m < n; m++) {
-                boolean valid = true;
-                for (int xi : xIndices) {
+                for (int elem : x) {
+                    int j = indexos[elem];
                     if (op) {
-                        // Suprem: m >= xi? (m relacionat amb xi?)
-                        // En l'ordre parcial: sup és mínim element major o igual a tots
-                        if (!R[xi][m]) { // xi <= m ha de ser cert
-                            valid = false;
+                        // Suprem → ha de ser major o igual que tots els de x
+                        if (!matriu[j][i]) {
+                            vàlid = false;
                             break;
                         }
                     } else {
-                        // Ínfim: m <= xi? (m relacionat amb xi)
-                        // En l'ordre parcial: ínfim és màxim element menor o igual a tots
-                        if (!R[m][xi]) { // m <= xi ha de ser cert
-                            valid = false;
+                        // Ínfim → ha de ser menor o igual que tots els de x
+                        if (!matriu[i][j]) {
+                            vàlid = false;
                             break;
                         }
                     }
                 }
-                if (valid) {
-                    // Comprovem que sigui mínim/màxim entre els candidats
-                    boolean millor = true;
-                    for (int mm = 0; mm < n; mm++) {
-                        if (mm == m) {
-                            continue;
-                        }
-                        boolean potSerMillor = true;
-                        for (int xi : xIndices) {
-                            if (op) {
-                                // Suprem: mm també >= x[i]
-                                if (!R[xi][mm]) {
-                                    potSerMillor = false;
-                                }
-                            } else {
-                                // Ínfim: mm també <= x[i]
-                                if (!R[mm][xi]) {
-                                    potSerMillor = false;
-                                }
+
+                if (vàlid) {
+                    if (resultat == null) {
+                        resultat = candidat;
+                    } else {
+                        if (op) {
+                            // Suprem → cercam el menor
+                            if (candidat < resultat) {
+                                resultat = candidat;
+                            }
+                        } else {
+                            // Ínfim → cercam el major
+                            if (candidat > resultat) {
+                                resultat = candidat;
                             }
                         }
-                        if (potSerMillor) {
-                            if (op) {
-                                // Suprem ha de ser mínim, així que si mm < m => mm és millor
-                                if (R[mm][m]) {
-                                    millor = false;
-                                    break;
-                                }
-                            } else {
-                                // Ínfim ha de ser màxim, si mm > m => mm és millor
-                                if (R[m][mm]) {
-                                    millor = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    if (millor) {
-                        candidat = a[m];
-                        count++;
                     }
                 }
             }
 
-            if (count == 1) {
-                return candidat;
-            }
-            return null;
+            return resultat;
         }
+
 
         /*
      * Donada una funció `f` de `a` a `b`, retornau:
@@ -458,83 +411,82 @@ class Entrega {
          */
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
             int n = a.length;
-            int m = b.length;
+            int[][] graf = new int[n][2];
 
-            // Map del valor a l'índex dins b (per facilitar)
-            Map<Integer, Integer> bIndex = new HashMap<>();
-            for (int i = 0; i < m; i++) {
-                bIndex.put(b[i], i);
+            // Construïm el graf de la funció f
+            for (int i = 0; i < n; i++) {
+                graf[i][0] = a[i];
+                graf[i][1] = f.apply(a[i]);
             }
 
-            // Calcula imatge i comprova injectivitat
-            Map<Integer, Integer> fMap = new HashMap<>(); // val_b -> val_a
-            Set<Integer> image = new HashSet<>();
+            // Comprovam si és injectiva (no es repeteixen imatges)
             boolean injectiva = true;
-
-            for (int x : a) {
-                int y = f.apply(x);
-                if (!bIndex.containsKey(y)) {
-                    return null; // f(x) no està dins b: invalid
+            for (int i = 0; i < n; i++) {
+                for (int j = i + 1; j < n; j++) {
+                    if (graf[i][1] == graf[j][1]) {
+                        injectiva = false;
+                        break;
+                    }
                 }
-                if (image.contains(y)) {
-                    // valor repetit → no injectiva
-                    injectiva = false;
-                } else {
-                    image.add(y);
-                    fMap.put(y, x);
+                if (!injectiva) {
+                    break;
                 }
             }
 
-            // Comprovar sobrejectivitat: imatge == b?
-            boolean sobrejectiva = image.size() == m;
+            // Comprovam si és exhaustiva (tots els de b apareixen com a imatge)
+            boolean exhaustiva = true;
+            for (int i = 0; i < b.length; i++) {
+                boolean trobat = false;
+                for (int j = 0; j < n; j++) {
+                    if (graf[j][1] == b[i]) {
+                        trobat = true;
+                        break;
+                    }
+                }
+                if (!trobat) {
+                    exhaustiva = false;
+                    break;
+                }
+            }
 
-            // 1. Si f és bijectiva (injectiva + sobrejectiva)
-            if (injectiva && sobrejectiva) {
-                // Retornem la inversa completa: pares (f(x), x)
-                int[][] inversa = new int[m][2];
-                for (int i = 0; i < m; i++) {
-                    int valB = b[i];
-                    int valA = fMap.get(valB);
-                    inversa[i][0] = valB;
-                    inversa[i][1] = valA;
+            // Si és bijectiva (injectiva i exhaustiva), retornam la inversa completa
+            if (injectiva && exhaustiva) {
+                int[][] inversa = new int[n][2];
+                for (int i = 0; i < n; i++) {
+                    inversa[i][0] = graf[i][1];
+                    inversa[i][1] = graf[i][0];
                 }
                 return inversa;
             }
 
-            // 2. Inversa per l'esquerra: existeix inversa parcial per la imatge
+            // Si només és injectiva → inversa per l'esquerra
             if (injectiva) {
-                // Retornem els parells (f(x), x) només per imatge
-                int[][] inversaEsq = new int[image.size()][2];
-                int idx = 0;
-                for (int valB : image) {
-                    inversaEsq[idx][0] = valB;
-                    inversaEsq[idx][1] = fMap.get(valB);
-                    idx++;
+                int[][] esquerra = new int[n][2];
+                for (int i = 0; i < n; i++) {
+                    esquerra[i][0] = graf[i][1];
+                    esquerra[i][1] = graf[i][0];
                 }
-                return inversaEsq;
+                return esquerra;
             }
 
-            // 3. Inversa per la dreta: si és sobrejectiva, podem definir g amb algun valor preimatge per cada y
-            if (sobrejectiva) {
-                // Mapejem cada y a un preimatge qualsevol (primer que trobem)
-                Map<Integer, Integer> preimatge = new HashMap<>();
-                for (int x : a) {
-                    int y = f.apply(x);
-                    if (!preimatge.containsKey(y)) {
-                        preimatge.put(y, x);
+            // Si només és exhaustiva → inversa per la dreta
+            if (exhaustiva) {
+                int m = b.length;
+                int[][] dreta = new int[m][2];
+                for (int i = 0; i < m; i++) {
+                    int y = b[i];
+                    for (int j = 0; j < n; j++) {
+                        if (graf[j][1] == y) {
+                            dreta[i][0] = y;
+                            dreta[i][1] = graf[j][0];
+                            break;
+                        }
                     }
                 }
-                int[][] inversaDreta = new int[m][2];
-                for (int i = 0; i < m; i++) {
-                    int valB = b[i];
-                    int valA = preimatge.get(valB);
-                    inversaDreta[i][0] = valB;
-                    inversaDreta[i][1] = valA;
-                }
-                return inversaDreta;
+                return dreta;
             }
 
-            // 4. No existeix cap inversa
+            // Si no compleix cap condició
             return null;
         }
 
@@ -676,16 +628,125 @@ class Entrega {
      * Determinau si el graf `g` (no dirigit) té cicles.
          */
         static boolean exercici1(int[][] g) {
-            throw new UnsupportedOperationException("pendent");
+            int n = g.length;
+            boolean[] visitat = new boolean[n];
+
+            for (int i = 0; i < n; i++) {
+                if (!visitat[i]) {
+                    if (esCicle(g, visitat, i, -1)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
+
+        // retorna true si troba un cicle
+        static boolean esCicle(int[][] g, boolean[] visitat, int actual, int pare) {
+            visitat[actual] = true;
+
+            for (int veinat : g[actual]) {
+                if (!visitat[veinat]) {
+                    if (esCicle(g, visitat, veinat, actual)) {
+                        return true;
+                    }
+                } else if (veinat != pare) {
+                    // Si el veïnat ja ha estat visitat i no és el pare → cicle
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
 
         /*
      * Determinau si els dos grafs són isomorfs. Podeu suposar que cap dels dos té ordre major que
      * 10.
          */
         static boolean exercici2(int[][] g1, int[][] g2) {
-            throw new UnsupportedOperationException("pendent");
+            int n = g1.length;
+            if (n != g2.length) {
+                return false;
+            }
+
+            int[] perm = new int[n];
+            for (int i = 0; i < n; i++) {
+                perm[i] = i;
+            }
+
+            do {
+                if (comprovaIsomorfisme(g1, g2, perm)) {
+                    return true;
+                }
+            } while (segPermutacio(perm));
+
+            return false;
         }
+
+        // Comprova si aplicar la permutació fa que g1 sigui igual a g2
+        static boolean comprovaIsomorfisme(int[][] g1, int[][] g2, int[] perm) {
+            int n = g1.length;
+
+            for (int i = 0; i < n; i++) {
+                boolean[] connexions = new boolean[n];
+                for (int veinat : g1[i]) {
+                    connexions[perm[veinat]] = true;
+                }
+
+                for (int j = 0; j < n; j++) {
+                    if (g2[perm[i]].length != g1[i].length) {
+                        return false;
+                    }
+                    boolean trobat = false;
+                    for (int x : g2[perm[i]]) {
+                        if (connexions[x]) {
+                            trobat = true;
+                        } else {
+                            trobat = false;
+                            break;
+                        }
+                    }
+                    if (!trobat) {
+                        return false;
+                    }
+                    break; // ja hem comprovat aquest vèrtex
+                }
+            }
+
+            return true;
+        }
+
+        // Genera la següent permutació lexicogràfica 
+        static boolean segPermutacio(int[] perm) {
+            int i = perm.length - 2;
+            while (i >= 0 && perm[i] > perm[i + 1]) {
+                i--;
+            }
+
+            if (i < 0) {
+                return false;
+            }
+
+            int j = perm.length - 1;
+            while (perm[j] < perm[i]) {
+                j--;
+            }
+
+            int aux = perm[i];
+            perm[i] = perm[j];
+            perm[j] = aux;
+
+            for (int a = i + 1, b = perm.length - 1; a < b; a++, b--) {
+                aux = perm[a];
+                perm[a] = perm[b];
+                perm[b] = aux;
+            }
+
+            return true;
+        }
+
 
         /*
      * Determinau si el graf `g` (no dirigit) és un arbre. Si ho és, retornau el seu recorregut en
@@ -695,8 +756,43 @@ class Entrega {
      * vèrtex.
          */
         static int[] exercici3(int[][] g, int r) {
-            throw new UnsupportedOperationException("pendent");
+            int n = g.length;
+            boolean[] visitat = new boolean[n];
+
+            // Comprovam si hi ha algun cicle
+            if (esCicle(g, visitat, r, -1)) {
+                return null;
+            }
+
+            // Comprovam si és connex
+            for (boolean v : visitat) {
+                if (!v) {
+                    return null;
+                }
+            }
+
+            // Si és un arbre, feim el postordre
+            int[] resultat = new int[n];
+            int[] pos = new int[1]; // ús d'array per passar enter per referència
+            Arrays.fill(visitat, false);
+            postordre(g, r, visitat, resultat, pos);
+
+            return resultat;
         }
+
+        static void postordre(int[][] g, int u, boolean[] visitat, int[] resultat, int[] pos) {
+            visitat[u] = true;
+
+            for (int v : g[u]) {
+                if (!visitat[v]) {
+                    postordre(g, v, visitat, resultat, pos);
+                }
+            }
+
+            resultat[pos[0]] = u;
+            pos[0]++;
+        }
+
 
         /*
      * Suposau que l'entrada és un mapa com el següent, donat com String per files (vegeu els tests)
@@ -723,8 +819,79 @@ class Entrega {
      * Si és impossible, retornau -1.
          */
         static int exercici4(char[][] mapa) {
-            throw new UnsupportedOperationException("pendent");
+            int files = mapa.length;
+            int columnes = mapa[0].length;
+
+            // Cercam l'origen
+            int origenX = -1, origenY = -1;
+            for (int i = 0; i < files; i++) {
+                for (int j = 0; j < columnes; j++) {
+                    if (mapa[i][j] == 'O') {
+                        origenX = i;
+                        origenY = j;
+                        break;
+                    }
+                }
+                if (origenX != -1) {
+                    break;
+                }
+            }
+
+            // Si no s'ha trobat l'origen
+            if (origenX == -1) {
+                return -1;
+            }
+
+            // Cua bàsica amb arrays
+            int max = files * columnes;
+            int[][] cua = new int[max][2];
+            int inici = 0;
+            int fi = 0;
+
+            // Arrays auxiliars
+            boolean[][] visitat = new boolean[files][columnes];
+            int[][] dist = new int[files][columnes];
+
+            // Direccions (amunt, avall, esquerra, dreta)
+            int[] dx = {-1, 1, 0, 0};
+            int[] dy = {0, 0, -1, 1};
+
+            // Afegim l'origen a la cua
+            cua[fi][0] = origenX;
+            cua[fi][1] = origenY;
+            fi++;
+            visitat[origenX][origenY] = true;
+            dist[origenX][origenY] = 0;
+
+            while (inici < fi) {
+                int x = cua[inici][0];
+                int y = cua[inici][1];
+                inici++;
+
+                if (mapa[x][y] == 'D') {
+                    return dist[x][y];
+                }
+
+                // Exploram veïnats
+                for (int d = 0; d < 4; d++) {
+                    int nx = x + dx[d];
+                    int ny = y + dy[d];
+
+                    if (nx >= 0 && nx < files && ny >= 0 && ny < columnes) {
+                        if (!visitat[nx][ny] && mapa[nx][ny] != '#') {
+                            visitat[nx][ny] = true;
+                            dist[nx][ny] = dist[x][y] + 1;
+                            cua[fi][0] = nx;
+                            cua[fi][1] = ny;
+                            fi++;
+                        }
+                    }
+                }
+            }
+
+            return -1; // No s'ha trobat camí
         }
+
 
         /*
      * Aquí teniu alguns exemples i proves relacionades amb aquests exercicis (vegeu `main`)
