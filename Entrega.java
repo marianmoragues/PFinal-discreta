@@ -117,14 +117,15 @@ class Entrega {
         }
 
         static boolean operacions(boolean a, boolean b, char op) {
+            // Per saber quina operació ha de realitzar
             switch (op) {
-                case CONJ:
+                case CONJ:  // conjunció
                     return a && b;
-                case DISJ:
+                case DISJ:  // disjunció
                     return a || b;
-                case IMPL:
+                case IMPL:  // implicació
                     return !a || b;
-                case NAND:
+                case NAND:  // nand
                     return !(a && b);
                 default:
                     throw new IllegalArgumentException("Operador desconegut: " + op);
@@ -132,7 +133,7 @@ class Entrega {
         }
 
         static boolean es1(int valor) {
-            return valor == 1;
+            return valor == 1;  // retorna true si el valor és 1
         }
 
         /*
@@ -146,21 +147,22 @@ class Entrega {
      * (∀x : P(x)) <-> (∃!x : Q(x))
          */
         static boolean exercici2(int[] universe, Predicate<Integer> p, Predicate<Integer> q) {
-            boolean totsCompleixenP = true;
-            int comptadorQ = 0;
+            boolean totsCompleixenP = true; // suposam que tots compleixen P
+            int comptadorQ = 0;             // comptam quants compleixen Q
 
             for (int x : universe) {
                 if (!p.test(x)) {
-                    totsCompleixenP = false;
+                    totsCompleixenP = false;    // si qualcú no compleix P, canviam a false
                 }
                 if (q.test(x)) {
-                    comptadorQ++;
+                    comptadorQ++;       // comptam quants compleixen Q
                 }
             }
 
             // (∀x : P(x)) <-> (∃!x : Q(x)) s'ha de complir exactament una vegada
             boolean existeixUnicQ = comptadorQ == 1;
-
+            
+            // retornam si les dues condicions són equivalents
             return totsCompleixenP == existeixUnicQ;
         }
 
@@ -219,21 +221,20 @@ class Entrega {
         static int exercici1(int[] a) {
             int n = a.length;
 
-            // Matriu per als nombres de Stirling de segon tipus
+            // Matriu per guardar els nombres de Stirling
             int[][] S = new int[n + 1][n + 1];
 
-            // Cas base: només hi ha una manera de dividir un conjunt buit en 0 subconjunts
+            // Cas base
             S[0][0] = 1;
 
-            // Omplim la taula segons la relació de recurrència:
-            // S(n, k) = k * S(n-1, k) + S(n-1, k-1)
+            // Fórmula de recurrència: S(n, k) = k * S(n-1, k) + S(n-1, k-1)
             for (int i = 1; i <= n; i++) {
                 for (int j = 1; j <= i; j++) {
                     S[i][j] = j * S[i - 1][j] + S[i - 1][j - 1];
                 }
             }
 
-            // El nombre de particions del conjunt és la suma dels nombres de Stirling de segon tipus per a k = 1 fins n
+            // El nombre de particions del conjunt és la suma dels nombres de Stirling per a k = 1 fins n
             int totalParticions = 0;
             for (int k = 1; k <= n; k++) {
                 totalParticions += S[n][k];
@@ -252,19 +253,24 @@ class Entrega {
         static int exercici2(int[] a, int[][] rel) {
             int n = a.length;
             int[] pos = new int[a[n - 1] + 1];
+            
+            // Assignam la posició real per a cada valor de a
             for (int i = 0; i < n; i++) {
                 pos[a[i]] = i;
             }
-
+            
+            // Cream matriu de relació
             boolean[][] relacio = new boolean[n][n];
             for (int[] par : rel) {
                 relacio[pos[par[0]]][pos[par[1]]] = true;
             }
-
+            
+            // Clausura reflexiva
             for (int i = 0; i < n; i++) {
                 relacio[i][i] = true;
             }
-
+            
+            // Clausura transitiva
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
                     for (int j = 0; j < n; j++) {
@@ -272,7 +278,8 @@ class Entrega {
                     }
                 }
             }
-
+            
+            // Clausura antisimètrica
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
                     if (i != j && relacio[i][j] && relacio[j][i]) {
@@ -280,7 +287,8 @@ class Entrega {
                     }
                 }
             }
-
+            
+            // Comptam el total de relacions
             int count = 0;
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
@@ -340,13 +348,13 @@ class Entrega {
                     int j = posicio[elem];
 
                     if (op) {
-                        // Suprem → ha de ser major o igual que tots els de x
+                        // Suprem: ha de ser major o igual que tots els de x
                         if (!matriu[j][i]) {
                             compleix = false;
                             break;
                         }
                     } else {
-                        // Ínfim → ha de ser menor o igual que tots els de x
+                        // Ínfim: ha de ser menor o igual que tots els de x
                         if (!matriu[i][j]) {
                             compleix = false;
                             break;
