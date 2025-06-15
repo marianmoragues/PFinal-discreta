@@ -597,12 +597,12 @@ class Entrega {
      * Determinau si el graf `g` (no dirigit) té cicles.
          */
         static boolean exercici1(int[][] graf) {
-            int n = graf.length;
+            int n = graf.length; //Nombre de nodes del graf 
             boolean[] marcat = new boolean[n];
 
             for (int i = 0; i < n; i++) {
                 if (!marcat[i]) {
-                    if (hiHaCicle(graf, marcat, i, -1)) {
+                    if (hiHaCicle(graf, marcat, i, -1)) { //Sitrobam un cicle retornam true
                         return true;
                     }
                 }
@@ -612,7 +612,7 @@ class Entrega {
 
         // funció auxiliar per detectar cicles
         static boolean hiHaCicle(int[][] graf, boolean[] marcat, int actual, int anterior) {
-            marcat[actual] = true;
+            marcat[actual] = true; //Marcam el node actual com a visitat
             for (int veinat : graf[actual]) {
                 if (!marcat[veinat]) {
                     if (hiHaCicle(graf, marcat, veinat, actual)) {
@@ -632,16 +632,16 @@ class Entrega {
          */
         static boolean exercici2(int[][] g1, int[][] g2) {
             int n = g1.length;
-            if (n != g2.length) {
+            if (n != g2.length) { // Si els grafs no tenen els mateixos nodes no poden ser isomorfs
                 return false;
             }
 
-            int[] perm = new int[n];
+            int[] perm = new int[n]; //Array que representa una permutació de nodes
             for (int i = 0; i < n; i++) {
                 perm[i] = i;
             }
 
-            do {
+            do { //Si amb aquesta permutació son isomorfs retornam true
                 if (mateixGraf(g1, g2, perm)) {
                     return true;
                 }
@@ -661,7 +661,7 @@ class Entrega {
                 if (g2[perm[i]].length != g1[i].length) {
                     return false;
                 }
-                for (int v : g2[perm[i]]) {
+                for (int v : g2[perm[i]]) { //Comprobam que tots els veïns del node perm[i] en g2 esta en connexions
                     if (!connexions[v]) {
                         return false;
                     }
@@ -669,6 +669,8 @@ class Entrega {
             }
             return true;
         }
+//Genera la següent permutació lexicográfica de l'array perm
+// Retorna false si ja no hi ha més permutacions
 
         static boolean properaPermutacio(int[] perm) {
             int i = perm.length - 2;
@@ -683,6 +685,8 @@ class Entrega {
             while (perm[j] < perm[i]) {
                 j--;
             }
+            
+    // Intercanviam perm[i] y perm[j]
 
             int aux = perm[i];
             perm[i] = perm[j];
@@ -707,10 +711,11 @@ class Entrega {
         static int[] exercici3(int[][] graf, int arrel) {
             int n = graf.length;
             boolean[] marcat = new boolean[n];
-
+// Comprobam que no hi hagui cicles, si hi ha no és un arbre
             if (hiHaCicle(graf, marcat, arrel, -1)) {
                 return null;
             }
+            //Miram si es connex 
             for (boolean v : marcat) {
                 if (!v) {
                     return null;
@@ -726,6 +731,7 @@ class Entrega {
             postordre(graf, arrel, marcat, recorregut, posicio);
             return recorregut;
         }
+// Funció auxiliar: realitza un recorregut en postordre sobre el graf
 
         static void postordre(int[][] graf, int actual, boolean[] marcat, int[] recorregut, int[] pos) {
             marcat[actual] = true;
@@ -734,7 +740,7 @@ class Entrega {
                     postordre(graf, v, marcat, recorregut, pos);
                 }
             }
-            recorregut[pos[0]++] = actual;
+            recorregut[pos[0]++] = actual; //Afegim el node actual al recorregut
         }
 
         /*
@@ -762,9 +768,9 @@ class Entrega {
      * Si és impossible, retornau -1.
          */
         static int exercici4(char[][] mapa) {
-            int files = mapa.length, columnes = mapa[0].length;
+            int files = mapa.length, columnes = mapa[0].length; //Dimensió 
             int origenX = -1, origenY = -1;
-
+            //Cercam la posició d'origen
             for (int i = 0; i < files && origenX == -1; i++) {
                 for (int j = 0; j < columnes; j++) {
                     if (mapa[i][j] == 'O') {
@@ -792,12 +798,13 @@ class Entrega {
             while (ini < fi) {
                 int x = cua[ini][0], y = cua[ini][1];
                 ini++;
-                if (mapa[x][y] == 'D') {
+                if (mapa[x][y] == 'D') { //Si arribam al final retornam la distancia
                     return dist[x][y];
                 }
 
                 for (int d = 0; d < 4; d++) {
                     int nx = x + dx[d], ny = y + dy[d];
+                    //Comprobam que estiguin dins els limits 
                     if (nx >= 0 && nx < files && ny >= 0 && ny < columnes && !visitat[nx][ny] && mapa[nx][ny] != '#') {
                         visitat[nx][ny] = true;
                         dist[nx][ny] = dist[x][y] + 1;
@@ -883,7 +890,7 @@ class Entrega {
      * Pista: https://en.wikipedia.org/wiki/Exponentiation_by_squaring
          */
         static int[] exercici1(String missatge, int n, int e) {
-            byte[] lletres = missatge.getBytes();
+            byte[] lletres = missatge.getBytes(); //Convertim en un array de Bytes
             int[] blocs = new int[lletres.length / 2];
 
             // Agrupam cada dos caràcters en un sol enter (bloc)
