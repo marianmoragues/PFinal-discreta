@@ -161,7 +161,7 @@ class Entrega {
 
             // (∀x : P(x)) <-> (∃!x : Q(x)) s'ha de complir exactament una vegada
             boolean existeixUnicQ = comptadorQ == 1;
-            
+
             // retornam si les dues condicions són equivalents
             return totsCompleixenP == existeixUnicQ;
         }
@@ -253,23 +253,23 @@ class Entrega {
         static int exercici2(int[] a, int[][] rel) {
             int n = a.length;
             int[] pos = new int[a[n - 1] + 1];
-            
+
             // Assignam la posició real per a cada valor de a
             for (int i = 0; i < n; i++) {
                 pos[a[i]] = i;
             }
-            
+
             // Cream matriu de relació
             boolean[][] relacio = new boolean[n][n];
             for (int[] par : rel) {
                 relacio[pos[par[0]]][pos[par[1]]] = true;
             }
-            
+
             // Clausura reflexiva
             for (int i = 0; i < n; i++) {
                 relacio[i][i] = true;
             }
-            
+
             // Clausura transitiva
             for (int k = 0; k < n; k++) {
                 for (int i = 0; i < n; i++) {
@@ -278,7 +278,7 @@ class Entrega {
                     }
                 }
             }
-            
+
             // Clausura antisimètrica
             for (int i = 0; i < n; i++) {
                 for (int j = 0; j < n; j++) {
@@ -287,7 +287,7 @@ class Entrega {
                     }
                 }
             }
-            
+
             // Comptam el total de relacions
             int count = 0;
             for (int i = 0; i < n; i++) {
@@ -380,82 +380,54 @@ class Entrega {
      *  - Sinó, null.
          */
         static int[][] exercici4(int[] a, int[] b, Function<Integer, Integer> f) {
-            int n = a.length;
-            int[][] graf = new int[n][2];
+            int[] valorsF = new int[a.length];
+            int[] preimatges = new int[a.length];
+            int mida = 0;
 
-            // Generam les parelles f(x) = y
-            for (int i = 0; i < n; i++) {
-                graf[i][0] = a[i];
-                graf[i][1] = f.apply(a[i]);
-            }
-
-            // Comprovam si és injectiva
-            boolean injectiva = true;
-            for (int i = 0; i < n; i++) {
-                for (int j = i + 1; j < n; j++) {
-                    if (graf[i][1] == graf[j][1]) {
-                        injectiva = false;
-                        break;
-                    }
-                }
-                if (!injectiva) {
-                    break;
-                }
-            }
-
-            // Comprovam si és exhaustiva
-            boolean exhaustiva = true;
-            for (int i = 0; i < b.length; i++) {
+            // Crear parells (f(x), x) i verificar si hi ha col·lisions
+            for (int i = 0; i < a.length; i++) {
+                int x = a[i];
+                int fx = f.apply(x);
                 boolean trobat = false;
-                for (int j = 0; j < n; j++) {
-                    if (graf[j][1] == b[i]) {
+
+                for (int j = 0; j < mida; j++) {
+                    if (valorsF[j] == fx) {
+                        if (preimatges[j] != x) {
+                            // Si ja existeix amb diferent x -> no és injectiva
+                            return null;
+                        }
                         trobat = true;
                         break;
                     }
                 }
+
                 if (!trobat) {
-                    exhaustiva = false;
-                    break;
+                    valorsF[mida] = fx;
+                    preimatges[mida] = x;
+                    mida++;
                 }
             }
 
-            if (injectiva && exhaustiva) {
-                // Inversa total
-                int[][] inversa = new int[n][2];
-                for (int i = 0; i < n; i++) {
-                    inversa[i][0] = graf[i][1];
-                    inversa[i][1] = graf[i][0];
-                }
-                return inversa;
-            }
+            // Construir el graf de la inversa estesa
+            int[][] graf = new int[b.length][2];
+            int valorArbitrari = a[0];
 
-            if (injectiva) {
-                // Inversa per l’esquerra
-                int[][] invE = new int[n][2];
-                for (int i = 0; i < n; i++) {
-                    invE[i][0] = graf[i][1];
-                    invE[i][1] = graf[i][0];
-                }
-                return invE;
-            }
+            for (int i = 0; i < b.length; i++) {
+                int y = b[i];
+                int x = valorArbitrari;
 
-            if (exhaustiva) {
-                // Inversa per la dreta
-                int[][] invD = new int[b.length][2];
-                for (int i = 0; i < b.length; i++) {
-                    int val = b[i];
-                    for (int j = 0; j < n; j++) {
-                        if (graf[j][1] == val) {
-                            invD[i][0] = val;
-                            invD[i][1] = graf[j][0];
-                            break;
-                        }
+                for (int j = 0; j < mida; j++) {
+                    if (valorsF[j] == y) {
+                        x = preimatges[j];
+                        break;
                     }
                 }
-                return invD;
+
+                graf[i][0] = y;
+                graf[i][1] = x;
             }
 
-            return null;
+            return graf;
         }
 
 
@@ -685,9 +657,8 @@ class Entrega {
             while (perm[j] < perm[i]) {
                 j--;
             }
-            
-    // Intercanviam perm[i] y perm[j]
 
+            // Intercanviam perm[i] y perm[j]
             int aux = perm[i];
             perm[i] = perm[j];
             perm[j] = aux;
